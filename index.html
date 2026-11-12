@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>灵犀 · 授权管理后台</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+  :root{
+    --bg:#0b1016; --panel:#111721; --line:rgba(255,255,255,.08);
+    --text:#e6ecf4; --dim:#8b97a8; --accent:#5eead4; --warn:#fbbf24; --bad:#f87171; --ok:#86efac;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:13px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
+  header{display:flex;align-items:center;gap:10px;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  h1{font-size:15px;font-weight:600;letter-spacing:.04em;margin:0}
+  .sub{color:var(--dim);font-size:11px;margin-left:2px}
+  .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+  input,select,button{font:inherit;color:inherit}
+  input[type=text],input[type=password],input[type=number],select{
+    background:#0b1016;border:1px solid var(--line);border-radius:7px;padding:7px 10px;outline:none;font-size:12.5px}
+  input:focus,select:focus{border-color:rgba(94,234,212,.45)}
+  button{background:rgba(94,234,212,.12);border:1px solid rgba(94,234,212,.32);color:var(--accent);
+    border-radius:7px;padding:6px 12px;cursor:pointer;font-size:12px;transition:.15s}
+  button:hover{background:rgba(94,234,212,.2)}
+  button.ghost{background:transparent;border-color:var(--line);color:var(--dim)}
+  button.ghost:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+  button.danger{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.3);color:var(--bad)}
+  #login{max-width:400px;margin:84px auto;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:26px}
+  #login h2{margin:0 0 4px;font-size:14px;font-weight:600}
+  #login p{margin:0 0 18px;color:var(--dim);font-size:11.5px}
+  .fldline{margin-bottom:10px}
+  .fldline label{display:block;color:var(--dim);font-size:10.5px;margin-bottom:4px;letter-spacing:.05em}
+  .fldline input{width:100%}
+  #login button{width:100%;margin-top:6px;padding:8px 0}
+  #msg{margin-top:12px;font-size:11.5px;min-height:18px;text-align:center}
+  .stat-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .stat{flex:1 1 150px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+  .stat b{display:block;font-size:22px;font-weight:300;letter-spacing:.02em}
+  .stat span{color:var(--dim);font-size:10.5px;letter-spacing:.08em}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:11px}
+  .card.st-locked{border-color:rgba(248,113,113,.35)}
+  .card.st-unlock{border-color:rgba(251,191,36,.3)}
+  .top{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .name{font-size:13.5px;font-weight:600}
+  .mid{color:var(--dim);font-size:10.5px;font-family:ui-monospace,Consolas,monospace}
+  .badge{font-size:10px;padding:1px 7px;border-radius:20px;border:1px solid currentColor}
+  .b-active{color:var(--ok)} .b-unlock{color:var(--warn)} .b-locked{color:var(--bad)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:9px;margin-top:11px}
+  .fld label{display:block;color:var(--dim);font-size:10px;margin-bottom:3px;letter-spacing:.05em}
+  .fld input,.fld select{width:100%}
+  .actions{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap}
+  .meta{color:var(--dim);font-size:10.5px;margin-top:9px;display:flex;gap:14px;flex-wrap:wrap}
+  .empty{text-align:center;color:var(--dim);padding:50px 0;font-size:12px}
+  .hint{color:var(--dim);font-size:10.5px;margin-top:5px}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="dot"></span>
+    <h1>灵犀 · 授权管理后台</h1>
+    <span class="sub">小林科技</span>
+    <div class="right hide" id="topbar">
+      <span class="hint" id="lastRefresh"></span>
+      <button class="ghost" id="btnRefresh">刷新</button>
+      <button class="ghost" id="btnLogout">退出</button>
+    </div>
+  </header>
+
+  <div id="login">
+    <h2>登录</h2>
+    <p>请使用管理账号登录</p>
+    <div class="fldline">
+      <label>账号</label>
+      <input type="text" id="user" autocomplete="username" placeholder="账号">
+    </div>
+    <div class="fldline">
+      <label>密码</label>
+      <input type="password" id="pass" autocomplete="current-password" placeholder="密码">
+    </div>
+    <button id="btnLogin">登录</button>
+    <div id="msg"></div>
+  </div>
+
+  <div id="main" class="hide">
+    <div class="stat-row" id="stats"></div>
+    <div id="devices"></div>
+  </div>
+</div>
+
+<script>
+const SB_URL = "https://wcnssyiqitugqfmcbdhe.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjbnNzeWlxaXR1Z3FmbWNiZGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDEyNzUsImV4cCI6MjA5ODk3NzI3NX0.9EfbEr7BQhZtbOwHJ3IrkOy16kcaxlmzuJuV0A2Z8Eg";
+
+/* 只存服务端发的临时令牌，密码不进浏览器存储、更不写在页面源码里 */
+let TOKEN = sessionStorage.getItem("lingxi_tk") || "";
+let DEVICES = [];
+
+async function rpc(fn, args) {
+  const r = await fetch(SB_URL + "/rest/v1/rpc/" + fn, {
+    method: "POST",
+    headers: {
+      "apikey": SB_KEY,
+      "Authorization": "Bearer " + SB_KEY,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(args || {})
+  });
+  const text = await r.text();
+  let data;
+  try { data = JSON.parse(text); } catch (e) { throw new Error("返回异常：" + text.slice(0, 140)); }
+  if (!r.ok) throw new Error((data && data.message) || ("HTTP " + r.status));
+  if (data && data.ok === false && data.reason === "bad_token") logout(true);
+  return data;
+}
+
+const $ = (id) => document.getElementById(id);
+
+function fmtTime(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d)) return "—";
+  const diff = (Date.now() - d.getTime()) / 1000;
+  const pad = (n) => String(n).padStart(2, "0");
+  const hm = pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  if (diff < 120) return Math.max(1, Math.round(diff)) + " 秒前";
+  if (diff < 3600) return Math.round(diff / 60) + " 分钟前";
+  if (diff < 86400) return Math.round(diff / 3600) + " 小时前";
+  return hm;
+}
+
+function statusOf(d) {
+  if (d.status === "locked") return { cls: "b-locked", card: "st-locked", text: "已封锁" };
+  if (d.status === "unlock") return { cls: "b-unlock", card: "st-unlock", text: "需密码" };
+  return { cls: "b-active", card: "", text: "正常" };
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function render() {
+  const total = DEVICES.length;
+  const online = DEVICES.filter(d => d.last_seen && (Date.now() - new Date(d.last_seen)) < 10 * 60 * 1000).length;
+  const locked = DEVICES.filter(d => d.status === "locked").length;
+  const replies = DEVICES.reduce((s, d) => s + (d.total_replies || 0), 0);
+
+  $("stats").innerHTML = [
+    ["设备总数", total], ["10 分钟在线", online], ["已封锁", locked], ["累计回复", replies]
+  ].map(([k, v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
+
+  if (!total) {
+    $("devices").innerHTML = `<div class="empty">还没有设备上报。客户机上启动一次灵犀就会自动登记。</div>`;
+    return;
+  }
+
+  $("devices").innerHTML = DEVICES.map(d => {
+    const st = statusOf(d);
+    return `
+    <div class="card ${st.card}">
+      <div class="top">
+        <span class="name">${esc(d.label || "未命名设备")}</span>
+        <span class="badge ${st.cls}">${st.text}</span>
+        <span class="mid">${esc(d.machine_id)}</span>
+      </div>
+      <div class="meta">
+        <span>最后在线：${fmtTime(d.last_seen)}</span>
+        <span>首次：${fmtTime(d.first_seen)}</span>
+        <span>版本：${esc(d.app_version || "—")}</span>
+        <span>微信：${esc(d.wx_status || "—")}</span>
+        <span>回复：${d.total_replies || 0} 条</span>
+      </div>
+
+      <div class="grid">
+        <div class="fld"><label>备注名</label>
+          <input type="text" value="${esc(d.label || "")}" data-k="label" data-m="${esc(d.machine_id)}"></div>
+        <div class="fld"><label>状态</label>
+          <select data-k="status" data-m="${esc(d.machine_id)}">
+            <option value="active" ${d.status === "active" ? "selected" : ""}>正常</option>
+            <option value="unlock" ${d.status === "unlock" ? "selected" : ""}>需密码</option>
+            <option value="locked" ${d.status === "locked" ? "selected" : ""}>封锁</option>
+          </select></div>
+        <div class="fld"><label>何时要密码</label>
+          <select data-k="unlock_mode" data-m="${esc(d.machine_id)}">
+            <option value="never" ${d.unlock_mode === "never" ? "selected" : ""}>从不</option>
+            <option value="startup" ${d.unlock_mode === "startup" ? "selected" : ""}>每次启动</option>
+            <option value="interval" ${d.unlock_mode === "interval" ? "selected" : ""}>按周期</option>
+          </select></div>
+        <div class="fld"><label>周期（小时）</label>
+          <input type="number" min="1" max="8760" value="${d.unlock_hours || 24}" data-k="unlock_hours" data-m="${esc(d.machine_id)}"></div>
+        <div class="fld"><label>解锁密码</label>
+          <input type="text" value="${esc(d.unlock_password || "")}" placeholder="留空=不用密码" data-k="unlock_password" data-m="${esc(d.machine_id)}"></div>
+      </div>
+
+      <div class="actions">
+        <button onclick="saveDevice('${esc(d.machine_id)}')">保存</button>
+        <button class="ghost" onclick="quick('${esc(d.machine_id)}','active','never','')">恢复正常</button>
+        <button class="ghost" onclick="quick('${esc(d.machine_id)}','locked','never','')">立即封锁</button>
+        <button class="danger" onclick="delDevice('${esc(d.machine_id)}')">删除</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function load() {
+  try {
+    const res = await rpc("lingxi_admin_devices", { p_token: TOKEN });
+    if (!res.ok) { logout(true); return; }
+    DEVICES = res.devices || [];
+    render();
+    $("lastRefresh").textContent = "刷新于 " + new Date().toLocaleTimeString();
+  } catch (e) {
+    $("lastRefresh").textContent = "刷新失败：" + e.message;
+  }
+}
+
+function fieldOf(machine, key) {
+  const el = document.querySelector(`[data-k="${key}"][data-m="${machine}"]`);
+  return el ? el.value : null;
+}
+
+async function saveDevice(machine) {
+  try {
+    const res = await rpc("lingxi_admin_set", {
+      p_token: TOKEN,
+      p_machine: machine,
+      p_label: fieldOf(machine, "label"),
+      p_status: fieldOf(machine, "status"),
+      p_mode: fieldOf(machine, "unlock_mode"),
+      p_hours: parseInt(fieldOf(machine, "unlock_hours") || "24", 10) || 24,
+      p_password: fieldOf(machine, "unlock_password") || ""
+    });
+    if (!res.ok) { alert("保存失败：" + (res.reason || "")); return; }
+    await load();
+  } catch (e) { alert("保存失败：" + e.message); }
+}
+
+async function quick(machine, status, mode, pwd) {
+  try {
+    const res = await rpc("lingxi_admin_set", {
+      p_token: TOKEN, p_machine: machine,
+      p_status: status, p_mode: mode, p_password: pwd
+    });
+    if (!res.ok) { alert("操作失败：" + (res.reason || "")); return; }
+    await load();
+  } catch (e) { alert("操作失败：" + e.message); }
+}
+
+async function delDevice(machine) {
+  if (!confirm("确定删除这台设备的记录？如果它还在运行，下次心跳会重新出现。")) return;
+  try {
+    await rpc("lingxi_admin_delete", { p_token: TOKEN, p_machine: machine });
+    await load();
+  } catch (e) { alert("删除失败：" + e.message); }
+}
+
+function logout(silent) {
+  if (TOKEN) { rpc("lingxi_admin_logout", { p_token: TOKEN }).catch(() => {}); }
+  TOKEN = "";
+  sessionStorage.removeItem("lingxi_tk");
+  $("main").classList.add("hide");
+  $("topbar").classList.add("hide");
+  $("login").classList.remove("hide");
+  $("pass").value = "";
+  $("msg").textContent = silent ? "登录已失效，请重新登录" : "";
+  $("msg").style.color = silent ? "var(--warn)" : "var(--dim)";
+}
+
+async function login() {
+  const u = $("user").value.trim();
+  const p = $("pass").value;
+  if (!u || !p) { $("msg").style.color = "var(--bad)"; $("msg").textContent = "账号和密码都要填"; return; }
+  $("msg").style.color = "var(--dim)";
+  $("msg").textContent = "验证中…";
+  try {
+    const res = await rpc("lingxi_admin_login", { p_user: u, p_pass: p });
+    if (!res.ok) {
+      $("msg").style.color = "var(--bad)";
+      $("msg").textContent = res.reason === "not_configured" ? "数据库还没配置账号" : "账号或密码不对";
+      return;
+    }
+    TOKEN = res.token;
+    sessionStorage.setItem("lingxi_tk", TOKEN);
+    $("pass").value = "";
+    $("msg").textContent = "";
+    $("login").classList.add("hide");
+    $("main").classList.remove("hide");
+    $("topbar").classList.remove("hide");
+    await load();
+  } catch (e) {
+    $("msg").style.color = "var(--bad)";
+    $("msg").textContent = "连不上数据库：" + e.message;
+  }
+}
+
+$("btnLogin").onclick = login;
+$("pass").addEventListener("keydown", (e) => { if (e.key === "Enter") login(); });
+$("user").addEventListener("keydown", (e) => { if (e.key === "Enter") $("pass").focus(); });
+$("btnRefresh").onclick = load;
+$("btnLogout").onclick = () => logout(false);
+
+if (TOKEN) { $("login").classList.add("hide"); $("main").classList.remove("hide"); $("topbar").classList.remove("hide"); load(); }
+</script>
+</body>
+</html>
